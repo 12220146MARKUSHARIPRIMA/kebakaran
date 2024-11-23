@@ -10,7 +10,7 @@ pygame.mixer.init()
 
 # Fungsi untuk memutar alarm
 def play_alarm():
-    pygame.mixer.music.load("C:\\alrm.mp3")  # Ganti dengan path file alarm yang benar
+    pygame.mixer.music.load("alrm.mp3")  # Ganti dengan path file alarm yang benar
     pygame.mixer.music.play(-1)  # -1 agar suara alarm diputar secara berulang
 
 # Fungsi untuk menghentikan alarm
@@ -21,7 +21,7 @@ def stop_alarm():
 st.title("Real-Time Object Detection")
 
 # Load model YOLOv8
-model = YOLO("C:\\kebakaran\\best.pt")  # Ganti dengan path file model Anda
+model = YOLO("best.pt")  # Ganti dengan path file model Anda
 
 # Tombol untuk memulai deteksi
 run_detection = st.button("Start Detection")  
