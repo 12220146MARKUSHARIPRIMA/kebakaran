@@ -1,5 +1,5 @@
 streamlit
-opencv-python
 torch
 ultralytics
 pygame
+pillow  # Untuk mengolah gambar
