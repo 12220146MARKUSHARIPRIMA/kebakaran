@@ -1,5 +1,5 @@
 import streamlit as st
-import cv2
+#import cv2# Komentari sementara penggunaan OpenCV
 import torch
 from ultralytics import YOLO
 import pygame
