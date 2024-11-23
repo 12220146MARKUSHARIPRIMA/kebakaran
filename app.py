@@ -1,11 +1,10 @@
 import streamlit as st
+import cv2
 import torch
 from ultralytics import YOLO
 import pygame
 import tempfile
 import os
-from PIL import Image
-import io
 
 # Inisialisasi pygame untuk suara alarm
 pygame.mixer.init()
@@ -30,48 +29,71 @@ model_path = "best.pt"  # Pastikan file model ada di direktori yang benar
 if not os.path.exists(model_path):
     st.error(f"Model file {model_path} tidak ditemukan!")
 else:
-    model = YOLO(model_path)
+    try:
+        model = YOLO(model_path)  # Ini harus berhasil jika semua dependensi ada
+    except Exception as e:
+        st.error(f"Error loading YOLO model: {e}")
 
 # Tombol untuk memulai dan menghentikan deteksi
 run_detection = st.button("Start Detection")
 stop_detection = st.button("Stop Detection")
 
-# Variabel untuk melacak status alarm
-alarm_playing = False
+# Temp file untuk menyimpan video sementara
+temp_video = tempfile.NamedTemporaryFile(delete=False, suffix='.avi')
 
-# Upload gambar untuk deteksi
-uploaded_file = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png"])
-
-if uploaded_file:
-    image = Image.open(uploaded_file)  # Membaca gambar yang diupload oleh pengguna
-    st.image(image, caption="Uploaded Image.", use_column_width=True)
-    
-    # Konversi gambar ke format numpy array untuk deteksi
-    img_array = torch.tensor(image).permute(2, 0, 1).unsqueeze(0).float()
-    
-    # Deteksi objek menggunakan YOLO
-    results = model(img_array)  
-    annotated_frame = results[0].plot()  # Gambar hasil deteksi
-    detected = results[0].boxes
-
-    # Jika ada objek terdeteksi dan alarm belum diputar, mainkan alarm
-    if detected is not None and len(detected) > 0:
-        if not alarm_playing:  # Mainkan alarm hanya jika belum diputar
-            play_alarm()
-            alarm_playing = True
+if run_detection:
+    cap = cv2.VideoCapture(0)  # Buka kamera
+    if not cap.isOpened():
+        st.error("Kamera tidak dapat diakses!")
     else:
-        if alarm_playing:  # Hentikan alarm jika objek tidak terdeteksi
-            stop_alarm()
-            alarm_playing = False
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter(temp_video.name, fourcc, 20.0, (640, 480))
 
-    # Tampilkan hasil deteksi
-    st.image(annotated_frame, caption="Detected Image", use_column_width=True)
+        stframe = st.empty()  # Placeholder untuk video
 
-    # Simpan frame ke file sementara jika diperlukan
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
-        annotated_frame.save(temp_file, format="JPEG")
-        st.video(temp_file.name)  # Tampilkan hasil deteksi sebagai video
+        # Variabel untuk melacak status alarm
+        alarm_playing = False
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                st.warning("Tidak dapat membaca frame dari kamera.")
+                break
+
+            # Deteksi objek
+            try:
+                results = model(frame)  # Ini akan gagal jika model tidak dimuat dengan benar
+                annotated_frame = results[0].plot()  # Gambar hasil deteksi
+                detected = results[0].boxes
+
+                # Jika ada objek terdeteksi dan alarm belum diputar, mainkan alarm
+                if detected is not None and len(detected) > 0:
+                    if not alarm_playing:  # Mainkan alarm hanya jika belum diputar
+                        play_alarm()
+                        alarm_playing = True
+                else:
+                    if alarm_playing:  # Hentikan alarm jika objek tidak terdeteksi
+                        stop_alarm()
+                        alarm_playing = False
+            except Exception as e:
+                st.error(f"Error during detection: {e}")
+
+            # Tampilkan hasil di Streamlit
+            stframe.image(annotated_frame, channels="BGR")
+
+            # Simpan frame ke video
+            out.write(annotated_frame)
+
+        cap.release()
+        out.release()
+        stop_alarm()
 
 if stop_detection:
     st.info("Deteksi dihentikan.")
     stop_alarm()
+
+# Tampilkan video yang telah direkam
+if os.path.exists(temp_video.name):
+    st.video(temp_video.name)
+else:
+    st.warning("Tidak ada video untuk ditampilkan.")
