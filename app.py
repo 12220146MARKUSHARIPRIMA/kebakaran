@@ -2,20 +2,13 @@ import streamlit as st
 import cv2
 import torch
 from ultralytics import YOLO
-import pygame
+from playsound import playsound
+import threading
 import tempfile
-
-# Inisialisasi pygame untuk suara alarm
-pygame.mixer.init()
 
 # Fungsi untuk memutar alarm
 def play_alarm():
-    pygame.mixer.music.load("alrm.mp3")  # Ganti dengan path file alarm yang benar
-    pygame.mixer.music.play(-1)  # -1 agar suara alarm diputar secara berulang
-
-# Fungsi untuk menghentikan alarm
-def stop_alarm():
-    pygame.mixer.music.stop()
+    threading.Thread(target=playsound, args=("alrm.mp3",), daemon=True).start()
 
 # Streamlit UI
 st.title("Real-Time Object Detection")
@@ -60,9 +53,7 @@ if run_detection:
                     play_alarm()
                     alarm_playing = True
             else:
-                if alarm_playing:  # Hentikan alarm jika objek tidak terdeteksi
-                    stop_alarm()
-                    alarm_playing = False
+                alarm_playing = False
 
             # Tampilkan hasil di Streamlit
             stframe.image(annotated_frame, channels="BGR")
@@ -72,10 +63,8 @@ if run_detection:
 
         cap.release()
         out.release()
-        stop_alarm()
 
 if stop_detection:
     st.info("Deteksi dihentikan.")
-    stop_alarm()
 
 st.video(temp_video.name)
