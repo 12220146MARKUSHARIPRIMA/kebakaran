@@ -12,6 +12,7 @@ pygame.mixer.init()
 # Fungsi untuk memutar alarm
 def play_alarm():
     try:
+        # Pastikan file alrm.mp3 ada di repositori atau direktori yang benar
         pygame.mixer.music.load("alrm.mp3")  # File alarm harus ada di direktori yang sama
         pygame.mixer.music.play(-1)  # -1 agar suara alarm diputar secara berulang
     except pygame.error as e:
