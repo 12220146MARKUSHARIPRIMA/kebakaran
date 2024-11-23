@@ -1,21 +1,17 @@
 import streamlit as st
-#import cv2# Komentari sementara penggunaan OpenCV
+import cv2
 import torch
 from ultralytics import YOLO
 import pygame
 import tempfile
-import os
 
 # Inisialisasi pygame untuk suara alarm
 pygame.mixer.init()
 
 # Fungsi untuk memutar alarm
 def play_alarm():
-    try:
-        pygame.mixer.music.load("alrm.mp3")  # File alarm harus ada di direktori yang sama
-        pygame.mixer.music.play(-1)  # -1 agar suara alarm diputar secara berulang
-    except pygame.error as e:
-        st.error(f"Error memutar suara alarm: {e}")
+    pygame.mixer.music.load("alrm.mp3")  # Ganti dengan path file alarm yang benar
+    pygame.mixer.music.play(-1)  # -1 agar suara alarm diputar secara berulang
 
 # Fungsi untuk menghentikan alarm
 def stop_alarm():
@@ -25,20 +21,13 @@ def stop_alarm():
 st.title("Real-Time Object Detection")
 
 # Load model YOLOv8
-model_path = "best.pt"  # Pastikan file model ada di direktori yang benar
-if not os.path.exists(model_path):
-    st.error(f"Model file {model_path} tidak ditemukan!")
-else:
-    try:
-        model = YOLO(model_path)  # Ini harus berhasil jika semua dependensi ada
-    except Exception as e:
-        st.error(f"Error loading YOLO model: {e}")
+model = YOLO("best.pt")  # Ganti dengan path file model Anda
 
-# Tombol untuk memulai dan menghentikan deteksi
-run_detection = st.button("Start Detection")
-stop_detection = st.button("Stop Detection")
+# Tombol untuk memulai deteksi
+run_detection = st.button("Start Detection")  
+stop_detection = st.button("Stop Detection")  
 
-# Temp file untuk menyimpan video sementara
+# Temp file untuk video
 temp_video = tempfile.NamedTemporaryFile(delete=False, suffix='.avi')
 
 if run_detection:
@@ -61,22 +50,19 @@ if run_detection:
                 break
 
             # Deteksi objek
-            try:
-                results = model(frame)  # Ini akan gagal jika model tidak dimuat dengan benar
-                annotated_frame = results[0].plot()  # Gambar hasil deteksi
-                detected = results[0].boxes
+            results = model(frame)
+            annotated_frame = results[0].plot()  # Gambar hasil deteksi
+            detected = results[0].boxes
 
-                # Jika ada objek terdeteksi dan alarm belum diputar, mainkan alarm
-                if detected is not None and len(detected) > 0:
-                    if not alarm_playing:  # Mainkan alarm hanya jika belum diputar
-                        play_alarm()
-                        alarm_playing = True
-                else:
-                    if alarm_playing:  # Hentikan alarm jika objek tidak terdeteksi
-                        stop_alarm()
-                        alarm_playing = False
-            except Exception as e:
-                st.error(f"Error during detection: {e}")
+            # Jika ada objek terdeteksi dan alarm belum diputar, mainkan alarm
+            if detected is not None and len(detected) > 0:
+                if not alarm_playing:  # Mainkan alarm hanya jika belum diputar
+                    play_alarm()
+                    alarm_playing = True
+            else:
+                if alarm_playing:  # Hentikan alarm jika objek tidak terdeteksi
+                    stop_alarm()
+                    alarm_playing = False
 
             # Tampilkan hasil di Streamlit
             stframe.image(annotated_frame, channels="BGR")
@@ -92,8 +78,4 @@ if stop_detection:
     st.info("Deteksi dihentikan.")
     stop_alarm()
 
-# Tampilkan video yang telah direkam
-if os.path.exists(temp_video.name):
-    st.video(temp_video.name)
-else:
-    st.warning("Tidak ada video untuk ditampilkan.")
+st.video(temp_video.name)
