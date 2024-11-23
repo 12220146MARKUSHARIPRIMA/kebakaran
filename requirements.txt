@@ -1,5 +1,7 @@
 streamlit
-torch
-ultralytics
+torch==2.5.1
+ultralytics==8.3.36
 pygame
 pillow  # Untuk mengolah gambar
+opencv-python-headless  # Menambahkan dependensi OpenCV yang dibutuhkan oleh ultralytics
+
